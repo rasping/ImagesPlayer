@@ -135,7 +135,6 @@
     //初始值
     self.autoScroll         = YES;
     self.hidePageControl    = NO;
-    self.scrollIntervalTime = 2;
     
     //subViews
     [self addCollectionView];
@@ -214,6 +213,11 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
         [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
         self.previousOffsetX = self.collectionView.contentOffset.x;
         
+        //通知指示器的初始值
+        if ([self.indicatorPattern respondsToSelector:@selector(imagesPlayer:didChangedIndex:count:)]) {
+            [self.indicatorPattern imagesPlayer:self didChangedIndex:0 count:imageCount];
+        }
+        
         //开启定时器
         [self removeTimer];
         [self addTimer];
@@ -291,13 +295,6 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
         NSIndexPath *indexPath = [NSIndexPath indexPathForRow:ceilf(number * 0.5) + adjust inSection:0];
         [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
     }
-    
-    self.indicatorView.currentPage = indexPath.item % imageCount;
-    
-    //通知代理更新自定义分页指示器
-    if ([self.indicatorPattern respondsToSelector:@selector(imagesPlayer:didChangedIndex:count:)]) {
-        [self.indicatorPattern imagesPlayer:self didChangedIndex:indexPath.item % imageCount + 1 count:imageCount];
-    }
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
@@ -312,6 +309,28 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
 }
 
 #pragma mark - UIScrollViewDelegate
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+    NSInteger page = (NSInteger)(scrollView.contentOffset.x / W )% imageCount;
+    
+    self.indicatorView.currentPage = page;
+    //通知代理更新自定义分页指示器
+    if ([self.indicatorPattern respondsToSelector:@selector(imagesPlayer:didChangedIndex:count:)]) {
+        [self.indicatorPattern imagesPlayer:self didChangedIndex:page count:imageCount];
+    }
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    NSInteger page = (NSInteger)(scrollView.contentOffset.x / W )% imageCount;
+    
+    self.indicatorView.currentPage = page;
+    //通知代理更新自定义分页指示器
+    if ([self.indicatorPattern respondsToSelector:@selector(imagesPlayer:didChangedIndex:count:)]) {
+        [self.indicatorPattern imagesPlayer:self didChangedIndex:page count:imageCount];
+    }
+}
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {

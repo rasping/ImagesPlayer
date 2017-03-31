@@ -43,6 +43,8 @@
     [self.networkImagesView addNetWorkImages:netImages placeholder:[UIImage imageNamed:@"1_launch"]];
     self.networkImagesView.delegate = self;
     self.networkImagesView.indicatorPattern = self;
+    self.networkImagesView.scrollIntervalTime = 3.0;
+    self.networkImagesView.autoScroll = YES;
 }
 
 #pragma mark = ImagesPlayerIndictorPattern
@@ -70,7 +72,7 @@
 
 - (void)imagesPlayer:(ImagesPlayer *)imagesPlayer didChangedIndex:(NSInteger)index count:(NSInteger)count
 {
-    self.lable.text = [NSString stringWithFormat:@"%ld/%ld", index, count];
+    self.lable.text = [NSString stringWithFormat:@"%ld/%ld", index + 1, count];
 }
 
 #pragma mark - ImagesPlayerDelegae
