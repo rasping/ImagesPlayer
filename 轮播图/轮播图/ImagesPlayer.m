@@ -175,7 +175,8 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
 - (void)addTimer
 {
     if (!self.autoScroll) return;
-    NSUInteger interval = self.scrollIntervalTime ? self.scrollIntervalTime : 2;
+    [self removeTimer];
+    NSTimeInterval interval = self.scrollIntervalTime > 0 ? self.scrollIntervalTime : 2;
     self.timer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(nextImage) userInfo:nil repeats:YES];
 }
 
@@ -188,6 +189,22 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
         NSInteger count = round(self.collectionView.contentOffset.x / W);
         [self.collectionView setContentOffset:CGPointMake(count * W, 0) animated:NO];
     }
+}
+
+// 滚动到中间初始位置
+- (void)scrollToCenterOrigin
+{
+    NSInteger centerOrigin = imageCount;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:centerOrigin inSection:0];
+    [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
+}
+
+// 滚动到中间结束位置
+- (void)scrollToCenterEnd
+{
+    NSInteger centerEnd = imageCount * 2 - 1;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:centerEnd inSection:0];
+    [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
 }
 
 #pragma mark - Public
@@ -204,13 +221,12 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
     [self.indicatorView updateCurrentPageDisplay];
     
     //在Updates里执行完更新操作后再执行completion回调
+    __weak typeof(self) ws = self;
     [self.collectionView performBatchUpdates:^{
-        [self.collectionView reloadData];
+        [ws.collectionView reloadSections:[NSIndexSet indexSetWithIndex:0]];
+//        [ws.collectionView reloadData];
     } completion:^(BOOL finished) {
-        //刷新完成让collectionView滚动到中间位置
-        NSInteger center = ceilf([self.collectionView numberOfItemsInSection:0] * 0.5);
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:center inSection:0];
-        [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
+        [self scrollToCenterOrigin];
         self.previousOffsetX = self.collectionView.contentOffset.x;
         
         //通知指示器的初始值
@@ -219,7 +235,6 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
         }
         
         //开启定时器
-        [self removeTimer];
         [self addTimer];
     }];
 }
@@ -263,7 +278,7 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return imageCount * 1000;
+    return imageCount * 3;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
@@ -284,19 +299,6 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
 
 #pragma mark - UICollectionViewDelegate
 
-- (void)collectionView:(UICollectionView *)collectionView willDisplayCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath
-{
-    //当cell不能再滑动时，让collectionView再次滚动到中间位置
-    NSInteger number = [collectionView numberOfItemsInSection:0];
-    if (number == indexPath.item + 1 || 0 == indexPath.item) {
-        NSInteger adjust = self.previousOffsetX - collectionView.contentOffset.x;
-        adjust = adjust > 0 ? 1 : -2;
-        self.previousOffsetX = collectionView.contentOffset.x;
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:ceilf(number * 0.5) + adjust inSection:0];
-        [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionLeft animated:NO];
-    }
-}
-
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     if (self.block) {
@@ -309,6 +311,22 @@ static NSString * const reuseIdentifier = @"ImagesPlayerCell";
 }
 
 #pragma mark - UIScrollViewDelegate
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    CGFloat offsetX = scrollView.contentOffset.x;
+    CGFloat width = self.flow.itemSize.width;
+    if ((int)offsetX % (int)width == 0) {
+        NSInteger index = (NSInteger)(offsetX / width);
+        NSInteger number = [self.collectionView numberOfItemsInSection:0];
+        if (index == 0) {
+            [self scrollToCenterOrigin];
+        }
+        if (index == number - 1) {
+            [self scrollToCenterEnd];
+        }
+    }
+}
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {

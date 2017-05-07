@@ -33,7 +33,6 @@
         [images addObject:imageName];
     }
     [self.localImagesView addLocalImages:images];
-    self.localImagesView.autoScroll = NO;
     
     NSArray *netImages = @[@"http://www.ld12.com/upimg358/allimg/c151129/144WW1420B60-401445_lit.jpg",
                            @"http://img4.duitang.com/uploads/item/201508/11/20150811220329_XyZAv.png",
@@ -43,8 +42,8 @@
     [self.networkImagesView addNetWorkImages:netImages placeholder:[UIImage imageNamed:@"1_launch"]];
     self.networkImagesView.delegate = self;
     self.networkImagesView.indicatorPattern = self;
-    self.networkImagesView.scrollIntervalTime = 3.0;
-    self.networkImagesView.autoScroll = YES;
+    self.networkImagesView.scrollIntervalTime = 2.0;
+    self.networkImagesView.autoScroll = NO;
 }
 
 #pragma mark = ImagesPlayerIndictorPattern
